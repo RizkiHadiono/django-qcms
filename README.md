@@ -11,6 +11,7 @@ Built with **Python 3.12 · Django 6 · PostgreSQL / SQLite · Docker**. No IoT
 hardware, no JavaScript framework — deliberately small enough for one engineer
 to maintain inside a factory.
 
+<!-- Ganti OWNER dengan username GitHub Anda agar badge CI aktif. -->
 [![CI](https://github.com/OWNER/qcms/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/qcms/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![Django](https://img.shields.io/badge/django-6.x-092E20)
