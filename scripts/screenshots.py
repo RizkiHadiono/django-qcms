@@ -1,7 +1,7 @@
 """Ambil screenshot halaman QCMS untuk dokumentasi portofolio.
 
 Jalankan setelah aplikasi hidup di http://127.0.0.1:8080:
-    pip install -r requirements-dev.txt
+    pip install -r requirements-screenshots.txt
     python -m playwright install chromium
     python scripts/screenshots.py
 

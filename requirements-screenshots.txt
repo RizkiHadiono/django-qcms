@@ -1,0 +1,8 @@
+# Dependensi tambahan hanya untuk membuat dokumentasi (tangkapan layar).
+# Tidak dipakai aplikasi maupun CI.
+#
+#   pip install -r requirements-screenshots.txt
+#   python -m playwright install chromium
+#   python scripts/screenshots.py
+playwright>=1.40
+pillow>=10.0
