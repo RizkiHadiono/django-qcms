@@ -1,0 +1,35 @@
+# Blueprint Render: https://render.com/docs/blueprint-spec
+#
+# Demo publik memakai SQLite + data seed, bukan PostgreSQL, supaya tidak
+# bergantung pada database gratis yang kedaluwarsa setelah ~30 hari.
+services:
+  - type: web
+    name: qcms
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: QC_DEFECT_RATE_THRESHOLD
+        value: "3.0"
+      - key: SEED_DEMO
+        value: "1"
+      - key: SEED_DAYS
+        value: "30"
+      - key: DEMO_MODE
+        value: "1"
+      - key: HTTPS_ENABLED
+        value: "1"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://*.onrender.com"
+      - key: WEB_CONCURRENCY
+        value: "2"
+      - key: TZ
+        value: Asia/Jakarta
