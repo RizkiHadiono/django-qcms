@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% load static qc_tags %}
+
+{% block title %}Dashboard &middot; {{ app_name }}{% endblock %}
+{% block page_title %}Dashboard Quality Control{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'reports' %}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
+    {% icon "file" size=14 %} Laporan
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Ringkasan Kualitas Produksi</h2>
+    <div class="subtitle">
+      Periode {{ dari|date:"d-m-Y" }} s.d. {{ sampai|date:"d-m-Y" }}
+      &middot; {{ data.sessions|num }} sesi pemeriksaan &middot; {{ data.batches|num }} batch
+    </div>
+  </div>
+  <div class="d-flex gap-1 flex-wrap no-print">
+    <a href="?{% querystring dari=presets.hari_ini|date:'Y-m-d' sampai=presets.hari_ini|date:'Y-m-d' %}" class="btn btn-sm btn-outline-secondary">Hari ini</a>
+    <a href="?{% querystring dari=presets.tujuh_hari|date:'Y-m-d' sampai=presets.hari_ini|date:'Y-m-d' %}" class="btn btn-sm btn-outline-secondary">7 hari</a>
+    <a href="?{% querystring dari=presets.tiga_puluh_hari|date:'Y-m-d' sampai=presets.hari_ini|date:'Y-m-d' %}" class="btn btn-sm btn-outline-secondary">30 hari</a>
+    <a href="?{% querystring dari=presets.bulan_ini|date:'Y-m-d' sampai=presets.hari_ini|date:'Y-m-d' %}" class="btn btn-sm btn-outline-secondary">Bulan ini</a>
+  </div>
+</div>
+
+<div class="filter-bar no-print">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-2">
+      <label class="form-label" for="dari">Dari</label>
+      <input type="date" class="form-control" id="dari" name="dari" value="{{ dari|date:'Y-m-d' }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="sampai">Sampai</label>
+      <input type="date" class="form-control" id="sampai" name="sampai" value="{{ sampai|date:'Y-m-d' }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="line">Lini</label>
+      <select class="form-select" id="line" name="line">
+        <option value="">Semua</option>
+        {% for line in lines %}
+          <option value="{{ line.pk }}" {% if filters.line == line.pk|stringformat:"s" %}selected{% endif %}>{{ line.kode }} - {{ line.nama }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="shift">Shift</label>
+      <select class="form-select" id="shift" name="shift">
+        <option value="">Semua</option>
+        {% for shift in shifts %}
+          <option value="{{ shift.pk }}" {% if filters.shift == shift.pk|stringformat:"s" %}selected{% endif %}>Shift {{ shift.kode }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="product">Produk</label>
+      <select class="form-select" id="product" name="product">
+        <option value="">Semua</option>
+        {% for product in products %}
+          <option value="{{ product.pk }}" {% if filters.product == product.pk|stringformat:"s" %}selected{% endif %}>{{ product.part_number }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="metode">Metode</label>
+      <select class="form-select" id="metode" name="metode">
+        <option value="">Semua</option>
+        <option value="full" {% if filters.metode == "full" %}selected{% endif %}>Full</option>
+        <option value="sampling" {% if filters.metode == "sampling" %}selected{% endif %}>Sampling</option>
+      </select>
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary btn-sm">Terapkan</button>
+      <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+    </div>
+  </form>
+</div>
+
+{% if is_alert %}
+  <div class="alert alert-danger d-flex align-items-center gap-2">
+    <strong>Perhatian.</strong>
+    Defect rate {{ data.defect_rate|pct }} melampaui ambang {{ threshold|pct:1 }}.
+    Pertimbangkan pemeriksaan lanjutan atau penelusuran penyebab.
+  </div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-2">
+    <div class="stat-card">
+      <div class="stat-label">Total Produksi</div>
+      <div class="stat-value">{{ data.total_production|num }}</div>
+      <div class="stat-hint">unit diproduksi</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card">
+      <div class="stat-label">Diperiksa</div>
+      <div class="stat-value">{{ data.inspected|num }}</div>
+      <div class="stat-hint">{{ data.coverage|pct:1 }} cakupan</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card success">
+      <div class="stat-label">Lolos</div>
+      <div class="stat-value">{{ data.passed|num }}</div>
+      <div class="stat-hint">{{ data.pass_rate|pct }} pass rate</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card danger">
+      <div class="stat-label">Cacat</div>
+      <div class="stat-value">{{ data.failed|num }}</div>
+      <div class="stat-hint">{{ data.occurrences|num }} kejadian</div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-4">
+    <div class="stat-card accent">
+      <div class="stat-label">Defect Rate</div>
+      <div class="stat-value">{{ data.defect_rate|pct }}</div>
+      <div class="stat-hint">
+        {% if delta > 0 %}Naik {{ delta|pct }} dibanding periode sebelumnya{% elif delta < 0 %}Turun {{ delta|pct:2 }} dibanding periode sebelumnya{% else %}Stabil dibanding periode sebelumnya{% endif %}
+        &middot; DPU {{ data.dpu|num:3 }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header">Tren Defect Rate &amp; Volume Pemeriksaan</div>
+      <div class="card-body">
+        <div class="chart-wrap"><canvas id="chart-trend"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Komposisi Lolos vs Cacat</div>
+      <div class="card-body">
+        <div class="chart-wrap"><canvas id="chart-composition"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between">
+        <span>Jenis Kecacatan Terbanyak</span>
+        <a href="{% url 'analysis' %}" class="text-muted-sm text-decoration-none">Analisis lengkap &rarr;</a>
+      </div>
+      <div class="card-body">
+        {% if pareto %}
+          <div class="chart-wrap"><canvas id="chart-pareto"></canvas></div>
+        {% else %}
+          <div class="empty-state">
+            <div class="empty-title">Belum ada data kecacatan</div>
+            <div>Detail kecacatan belum dicatat pada periode ini.</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Distribusi Severity</div>
+      <div class="card-body">
+        {% if severity %}
+          <div class="chart-wrap"><canvas id="chart-severity"></canvas></div>
+        {% else %}
+          <div class="empty-state">
+            <div class="empty-title">Belum ada data</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Kinerja per Lini</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Lini</th>
+              <th class="text-end">Sesi</th>
+              <th class="text-end">Diperiksa</th>
+              <th class="text-end">Cacat</th>
+              <th class="text-end">Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in lines %}
+              <tr>
+                <td><strong>{{ row.kode }}</strong> <span class="text-muted-sm">{{ row.nama }}</span></td>
+                <td class="text-end">{{ row.sessions|num }}</td>
+                <td class="text-end">{{ row.inspected|num }}</td>
+                <td class="text-end">{{ row.failed|num }}</td>
+                <td class="text-end {% if row.rate > threshold %}text-danger fw-semibold{% endif %}">{{ row.rate|pct }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="text-center text-muted-sm py-4">Belum ada data pada periode ini.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Pemeriksaan Terbaru</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Kode Produksi</th>
+              <th>Waktu</th>
+              <th class="text-end">Cacat</th>
+              <th class="text-end">Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for inspection in recent %}
+              <tr>
+                <td>
+                  <a href="{% url 'inspection_detail' inspection.pk %}" class="mono text-decoration-none">{{ inspection.batch.kode }}</a>
+                  <div class="text-muted-sm">{{ inspection.batch.line.kode }} / Shift {{ inspection.batch.shift.kode }}</div>
+                </td>
+                <td class="text-nowrap">{{ inspection.inspected_at|date:"d-m H:i" }}</td>
+                <td class="text-end">{{ inspection.qty_fail|num }} / {{ inspection.qty_inspected|num }}</td>
+                <td class="text-end {% if inspection.defect_rate > threshold %}text-danger fw-semibold{% endif %}">{{ inspection.defect_rate|pct }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-center text-muted-sm py-4">Belum ada pemeriksaan.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ chart_data|json_script:"chart-data" }}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/charts.js' %}"></script>
+{% endblock %}

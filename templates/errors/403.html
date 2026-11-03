@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Akses Ditolak &middot; {{ app_name }}{% endblock %}
+{% block page_title %}Akses Ditolak{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body empty-state">
+    <div class="empty-title">403 &mdash; Anda tidak memiliki hak akses</div>
+    <div>Halaman ini hanya dapat dibuka oleh role tertentu.</div>
+    <a href="{% url 'home' %}" class="btn btn-primary btn-sm mt-3">Kembali ke halaman awal</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load qc_tags %}
+
+{% block title %}Manajemen Pengguna &middot; {{ app_name }}{% endblock %}
+{% block page_title %}Manajemen Pengguna{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'user_create' %}" class="btn btn-accent btn-sm d-inline-flex align-items-center gap-1">
+    {% icon "plus" size=15 %} Tambah Pengguna
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="filter-bar">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label" for="q">Cari</label>
+      <input type="text" class="form-control" id="q" name="q" value="{{ query }}" placeholder="Username, nama, atau role">
+    </div>
+    <div class="col-md-3">
+      <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1">
+        {% icon "search" size=15 %} Cari
+      </button>
+      {% if query %}<a href="{% url 'user_list' %}" class="btn btn-outline-secondary ms-1">Reset</a>{% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <span>Daftar Pengguna</span>
+    <span class="text-muted-sm fw-normal">{{ total }} akun</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Nama Lengkap</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Terakhir Masuk</th>
+          <th class="text-end">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in page_obj %}
+          <tr>
+            <td class="mono">{{ user.username }}</td>
+            <td>{{ user.nama_lengkap|default:"-" }}</td>
+            <td><span class="badge badge-soft">{{ user.role_label }}</span></td>
+            <td>
+              {% if user.is_active %}
+                <span class="badge badge-active">Aktif</span>
+              {% else %}
+                <span class="badge badge-inactive">Nonaktif</span>
+              {% endif %}
+            </td>
+            <td class="text-muted-sm">{{ user.last_login|date:"d-m-Y H:i"|default:"Belum pernah" }}</td>
+            <td class="text-end">
+              <a href="{% url 'user_update' user.pk %}" class="btn btn-sm btn-outline-secondary">Ubah</a>
+              {% if user.pk != request.user.pk %}
+                <form method="post" action="{% url 'user_toggle' user.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-secondary">
+                    {% if user.is_active %}Nonaktifkan{% else %}Aktifkan{% endif %}
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <div class="empty-title">Belum ada pengguna</div>
+                <div>Tambahkan akun terlebih dahulu.</div>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

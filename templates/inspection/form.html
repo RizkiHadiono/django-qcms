@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load qc_tags %}
+
+{% block title %}{{ title }} &middot; {{ app_name }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<form method="post" novalidate id="inspection-form">
+  {% csrf_token %}
+  {{ formset.management_form }}
+
+  {% if form.non_field_errors or formset.non_form_errors %}
+    <div class="alert alert-danger">
+      {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+      {% for error in formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header">Data Pemeriksaan</div>
+        <div class="card-body">
+          {% if batch %}
+            <div class="alert alert-info py-2 d-flex flex-wrap gap-3">
+              <div><span class="text-muted-sm">Kode produksi</span><div class="mono fw-semibold">{{ batch.kode }}</div></div>
+              <div><span class="text-muted-sm">Produk</span><div>{{ batch.product.part_number }} &middot; {{ batch.product.nama }}</div></div>
+              <div><span class="text-muted-sm">Lini / Shift</span><div>{{ batch.line.kode }} / Shift {{ batch.shift.kode }}</div></div>
+              <div><span class="text-muted-sm">Produksi</span><div>{{ batch.qty_plan|num }} unit</div></div>
+            </div>
+          {% endif %}
+
+          <div class="row">
+            {% for field in form %}
+              <div class="{% if field.name == 'catatan' %}col-12{% elif field.name == 'batch' %}col-12{% else %}col-md-6{% endif %} mb-3"
+                   {% if field.name == 'sample_size' %}id="sample-wrap"{% endif %}>
+                <label class="form-label" for="{{ field.id_for_label }}">
+                  {{ field.label }}{% if field.field.required %} <span class="required-star">*</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                {% for error in field.errors %}
+                  <div class="text-danger" style="font-size:.78rem">{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="text-muted-sm">
+            Metode <strong>Full Inspection</strong> memeriksa seluruh unit produksi.
+            <strong>Sampling</strong> hanya memeriksa sebagian unit; defect rate dihitung dari jumlah sampel.
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>Detail Unit Cacat <span class="text-muted-sm fw-normal">(opsional)</span></span>
+          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" id="add-unit">
+            {% icon "plus" size=14 %} Tambah Unit
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="text-muted-sm mb-3">
+            Catat unit yang cacat beserta jenis kecacatannya. Satu unit boleh memiliki lebih dari satu kategori.
+            Detail ini dipakai untuk analisis jenis kecacatan terbanyak.
+          </div>
+
+          <div id="unit-rows">
+            {% for unit_form in formset %}
+              {% include "inspection/_unit_row.html" with form=unit_form %}
+            {% endfor %}
+          </div>
+
+          <div class="empty-state py-3" id="unit-empty-hint">
+            <div class="empty-title">Belum ada detail unit</div>
+            <div>Anda tetap dapat menyimpan pemeriksaan tanpa detail unit.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card" style="position:sticky;top:80px">
+        <div class="card-header">Ringkasan</div>
+        <div class="card-body" id="inspection-summary">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted-sm">Diperiksa</span>
+            <strong data-calc="inspected">0</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted-sm">Lolos</span>
+            <strong data-calc="pass">0</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted-sm">Cacat</span>
+            <strong class="text-danger" data-calc="fail">0</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted-sm">Detail unit tercatat</span>
+            <strong data-calc="details">0</strong>
+          </div>
+          <hr>
+          <div class="stat-label">Defect Rate</div>
+          <div class="stat-value" data-calc="rate">0,00%</div>
+          <div class="stat-hint">Ambang peringatan {{ defect_threshold|pct:1 }}</div>
+
+          <div class="d-grid gap-2 mt-4">
+            <button type="submit" name="action" value="final" class="btn btn-primary">
+              Simpan &amp; Finalkan
+            </button>
+            <button type="submit" name="action" value="draft" class="btn btn-outline-secondary">
+              Simpan sebagai Draft
+            </button>
+            <a href="{% if inspection %}{% url 'inspection_detail' inspection.pk %}{% else %}{% url 'inspection_list' %}{% endif %}"
+               class="btn btn-link text-muted-sm">Batal</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<template id="unit-empty-template">
+  {% include "inspection/_unit_row.html" with form=formset.empty_form %}
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Sembunyikan petunjuk kosong bila sudah ada baris unit.
+  (function () {
+    const rows = document.getElementById("unit-rows");
+    const hint = document.getElementById("unit-empty-hint");
+    if (!rows || !hint) return;
+    const update = function () {
+      const visible = rows.querySelectorAll(".unit-row:not(.is-deleted)").length;
+      hint.style.display = visible ? "none" : "";
+    };
+    new MutationObserver(update).observe(rows, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+    rows.addEventListener("click", function () { setTimeout(update, 0); });
+    update();
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load qc_tags %}
+
+{% block title %}Data Produksi &middot; {{ app_name }}{% endblock %}
+{% block page_title %}Data Produksi{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'batch_create' %}" class="btn btn-accent btn-sm d-inline-flex align-items-center gap-1">
+    {% icon "plus" size=15 %} Buat Batch Produksi
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Batch Produksi</h2>
+    <div class="subtitle">Kode produksi dibuat otomatis dengan format QC-YYYYMMDD-L&lt;n&gt;-&lt;urut&gt;.</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label" for="q">Kode / Produk</label>
+      <input type="text" class="form-control" id="q" name="q" value="{{ query }}" placeholder="QC-20261103-L1-001">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="line">Lini</label>
+      <select class="form-select" id="line" name="line">
+        <option value="">Semua</option>
+        {% for line in lines %}
+          <option value="{{ line.pk }}" {% if selected.line == line.pk|stringformat:"s" %}selected{% endif %}>{{ line.kode }} - {{ line.nama }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="product">Produk</label>
+      <select class="form-select" id="product" name="product">
+        <option value="">Semua</option>
+        {% for product in products %}
+          <option value="{{ product.pk }}" {% if selected.product == product.pk|stringformat:"s" %}selected{% endif %}>{{ product.part_number }} - {{ product.nama }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="dari">Dari</label>
+      <input type="date" class="form-control" id="dari" name="dari" value="{{ selected.dari }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="sampai">Sampai</label>
+      <input type="date" class="form-control" id="sampai" name="sampai" value="{{ selected.sampai }}">
+    </div>
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1">
+        {% icon "search" size=15 %} Terapkan Filter
+      </button>
+      <a href="{% url 'batch_list' %}" class="btn btn-outline-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <span>Daftar Batch</span>
+    <span class="text-muted-sm fw-normal">{{ total }} batch</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Kode Produksi</th>
+          <th>Tanggal</th>
+          <th>Produk</th>
+          <th>Lini</th>
+          <th>Shift</th>
+          <th class="text-end">Jumlah Produksi</th>
+          <th class="text-center">Sesi QC</th>
+          <th class="text-end">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for batch in page_obj %}
+          <tr>
+            <td><a href="{% url 'batch_detail' batch.pk %}" class="mono text-decoration-none fw-semibold">{{ batch.kode }}</a></td>
+            <td>{{ batch.tanggal_produksi|date:"d-m-Y" }}</td>
+            <td>
+              <div>{{ batch.product.nama }}</div>
+              <div class="text-muted-sm mono">{{ batch.product.part_number }}</div>
+            </td>
+            <td>{{ batch.line.kode }}</td>
+            <td>Shift {{ batch.shift.kode }}</td>
+            <td class="text-end">{{ batch.qty_plan|num }}</td>
+            <td class="text-center">
+              {% if batch.jumlah_pemeriksaan %}
+                <span class="badge badge-active">{{ batch.jumlah_pemeriksaan }} sesi</span>
+              {% else %}
+                <span class="badge badge-draft">Belum diperiksa</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{% url 'inspection_create_batch' batch.pk %}" class="btn btn-sm btn-outline-secondary">Input QC</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8">
+              <div class="empty-state">
+                <div class="empty-title">Belum ada batch produksi</div>
+                <div>Buat batch terlebih dahulu untuk mulai mencatat pemeriksaan QC.</div>
+                <a href="{% url 'batch_create' %}" class="btn btn-primary btn-sm mt-3">Buat Batch Produksi</a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

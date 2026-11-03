@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% load qc_tags %}
+
+{% block title %}Pemeriksaan {{ inspection.batch.kode }} &middot; {{ app_name }}{% endblock %}
+{% block page_title %}Detail Pemeriksaan QC{% endblock %}
+
+{% block topbar_actions %}
+  {% if can_edit %}
+    <a href="{% url 'inspection_update' inspection.pk %}" class="btn btn-outline-secondary btn-sm">Koreksi Data</a>
+  {% endif %}
+  <button type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1" data-print>
+    {% icon "printer" size=14 %} Cetak
+  </button>
+{% endblock %}
+
+{% block content %}
+<div class="mb-3 no-print">
+  <a href="{% url 'inspection_list' %}" class="text-decoration-none text-muted-sm d-inline-flex align-items-center gap-1">
+    {% icon "arrow-left" size=14 %} Kembali ke daftar pemeriksaan
+  </a>
+</div>
+
+{% if inspection.is_void %}
+  <div class="alert alert-warning">
+    <strong>Pemeriksaan ini di-void.</strong>
+    Alasan: {{ inspection.void_reason }} &middot;
+    oleh {{ inspection.voided_by.display_name|default:"-" }} pada {{ inspection.voided_at|date:"d-m-Y H:i" }}.
+    Data tidak dihitung dalam laporan.
+  </div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span class="mono">{{ inspection.batch.kode }}</span>
+    <div class="d-flex gap-2">
+      <span class="badge badge-soft">{{ inspection.get_metode_display }}</span>
+      <span class="badge badge-{{ inspection.status }}">{{ inspection.get_status_display }}</span>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <div class="text-muted-sm">Produk</div>
+        <div class="fw-semibold">{{ inspection.batch.product.nama }}</div>
+        <div class="mono text-muted-sm">{{ inspection.batch.product.part_number }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted-sm">Lini / Shift</div>
+        <div class="fw-semibold">{{ inspection.batch.line.kode }} &middot; Shift {{ inspection.batch.shift.kode }}</div>
+        <div class="text-muted-sm">{{ inspection.batch.tanggal_produksi|date:"d-m-Y" }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted-sm">Inspector</div>
+        <div class="fw-semibold">{{ inspection.inspector.display_name }}</div>
+        <div class="text-muted-sm">{{ inspection.inspected_at|date:"d-m-Y H:i" }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted-sm">Cakupan Pemeriksaan</div>
+        <div class="fw-semibold">{{ inspection.qty_inspected|num }} / {{ inspection.total_production|num }} unit</div>
+        <div class="text-muted-sm">{{ inspection.coverage|pct:1 }} dari total produksi</div>
+      </div>
+    </div>
+    {% if inspection.catatan %}
+      <hr>
+      <div class="text-muted-sm mb-1">Catatan</div>
+      <div>{{ inspection.catatan }}</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Diperiksa</div>
+      <div class="stat-value">{{ inspection.qty_inspected|num }}</div>
+      <div class="stat-hint">{{ inspection.sessions_hint|default:"" }}{{ inspection.get_metode_display }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card success">
+      <div class="stat-label">Lolos</div>
+      <div class="stat-value">{{ inspection.qty_pass|num }}</div>
+      <div class="stat-hint">{{ inspection.pass_rate|pct }} pass rate</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card {% if inspection.defect_rate > threshold %}danger{% endif %}">
+      <div class="stat-label">Cacat</div>
+      <div class="stat-value">{{ inspection.qty_fail|num }}</div>
+      <div class="stat-hint">{{ inspection.defect_occurrences }} kejadian tercatat</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card accent">
+      <div class="stat-label">Defect Rate</div>
+      <div class="stat-value">{{ inspection.defect_rate|pct }}</div>
+      <div class="stat-hint">DPU {{ inspection.dpu|num:3 }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between">
+    <span>Detail Unit Cacat</span>
+    <span class="text-muted-sm fw-normal">
+      {{ inspection.detailed_units }} unit tercatat
+      {% if inspection.unclassified_units %} &middot; {{ inspection.unclassified_units }} unit tanpa detail{% endif %}
+    </span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th style="width:120px">Kode Unit</th>
+          <th>Kategori Kecacatan</th>
+          <th style="width:110px">Severity</th>
+          <th>Catatan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for unit in units %}
+          <tr>
+            <td class="mono fw-semibold">{{ unit.unit_ref }}</td>
+            <td>
+              {% for defect in unit.defects.all %}
+                <span class="badge badge-soft mb-1">{{ defect.category.nama }}</span>
+              {% empty %}
+                <span class="text-muted-sm">-</span>
+              {% endfor %}
+            </td>
+            <td>
+              {% for defect in unit.defects.all %}
+                {% if forloop.first %}
+                  <span class="badge {{ defect.severity|severity_badge }}">{{ defect.severity|severity_label }}</span>
+                {% endif %}
+              {% endfor %}
+            </td>
+            <td class="text-muted-sm">{{ unit.catatan|default:"-" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4">
+              <div class="empty-state">
+                <div class="empty-title">Tidak ada detail unit</div>
+                <div>Pemeriksaan ini dicatat tanpa rincian unit cacat.</div>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">Jejak Audit</div>
+      <div class="card-body">
+        {% for log in audit_logs %}
+          <div class="d-flex gap-2 mb-3">
+            <div class="avatar" style="width:28px;height:28px;flex:0 0 28px;font-size:.68rem">{{ log.user.display_name|default:"SYS"|slice:":2"|upper }}</div>
+            <div>
+              <div style="font-size:.85rem">
+                <strong>{{ log.user.display_name|default:"Sistem" }}</strong>
+                &middot; {{ log.get_aksi_display }}
+                <span class="text-muted-sm">{{ log.created_at|date:"d-m-Y H:i" }}</span>
+              </div>
+              {% if log.changes %}
+                <pre class="text-muted-sm mb-0" style="white-space:pre-wrap;font-size:.72rem">{{ log.changes }}</pre>
+              {% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-muted-sm">Belum ada aktivitas tercatat.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% if can_void %}
+    <div class="col-lg-4 no-print">
+      <div class="card">
+        <div class="card-header">Void Pemeriksaan</div>
+        <div class="card-body">
+          <p class="text-muted-sm">
+            Void dipakai bila data salah dan tidak boleh dihitung. Data tetap tersimpan untuk jejak audit.
+          </p>
+          <form method="post" action="{% url 'inspection_void' inspection.pk %}"
+                onsubmit="return confirm('Yakin ingin mem-void pemeriksaan ini?');">
+            {% csrf_token %}
+            <label class="form-label" for="reason">Alasan void</label>
+            <textarea class="form-control mb-2" id="reason" name="reason" rows="2" required></textarea>
+            <button type="submit" class="btn btn-outline-danger btn-sm">Void Pemeriksaan</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

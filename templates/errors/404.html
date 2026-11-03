@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Halaman Tidak Ditemukan &middot; {{ app_name }}{% endblock %}
+{% block page_title %}Halaman Tidak Ditemukan{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body empty-state">
+    <div class="empty-title">404 &mdash; Halaman tidak ditemukan</div>
+    <div>Periksa kembali alamat atau kembali ke halaman awal.</div>
+    <a href="{% url 'home' %}" class="btn btn-primary btn-sm mt-3">Kembali ke halaman awal</a>
+  </div>
+</div>
+{% endblock %}

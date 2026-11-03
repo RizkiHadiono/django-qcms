@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load qc_tags %}
+
+{% block title %}Riwayat QC &middot; {{ app_name }}{% endblock %}
+{% block page_title %}Riwayat Pemeriksaan QC{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Riwayat Pemeriksaan</h2>
+    <div class="subtitle">Telusuri pemeriksaan berdasarkan kode produksi, periode, lini, atau shift.</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label" for="q">Kode produksi</label>
+      <input type="text" class="form-control" id="q" name="q" value="{{ query }}"
+             placeholder="Contoh: QC-20261103-L1-001" autofocus>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="line">Lini</label>
+      <select class="form-select" id="line" name="line">
+        <option value="">Semua</option>
+        {% for line in lines %}
+          <option value="{{ line.pk }}" {% if selected.line == line.pk|stringformat:"s" %}selected{% endif %}>{{ line.kode }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="shift">Shift</label>
+      <select class="form-select" id="shift" name="shift">
+        <option value="">Semua</option>
+        {% for shift in shifts %}
+          <option value="{{ shift.pk }}" {% if selected.shift == shift.pk|stringformat:"s" %}selected{% endif %}>Shift {{ shift.kode }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label" for="dari">Periode</label>
+      <div class="d-flex gap-1">
+        <input type="date" class="form-control" id="dari" name="dari" value="{{ selected.dari }}">
+        <input type="date" class="form-control" id="sampai" name="sampai" value="{{ selected.sampai }}">
+      </div>
+    </div>
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1">
+        {% icon "search" size=15 %} Telusuri
+      </button>
+      <a href="{% url 'inspection_history' %}" class="btn btn-outline-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-label">Sesi Ditemukan</div>
+      <div class="stat-value">{{ summary.sessions|num }}</div>
+      <div class="stat-hint">{{ summary.inspected|num }} unit diperiksa</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card success">
+      <div class="stat-label">Lolos</div>
+      <div class="stat-value">{{ summary.passed|num }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card {% if summary.rate > defect_threshold %}danger{% endif %}">
+      <div class="stat-label">Cacat</div>
+      <div class="stat-value">{{ summary.failed|num }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card accent">
+      <div class="stat-label">Defect Rate</div>
+      <div class="stat-value">{{ summary.rate|pct }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <span>Hasil Penelusuran</span>
+    <span class="text-muted-sm fw-normal">{{ page_obj.paginator.count }} sesi</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Tanggal</th>
+          <th>Kode Produksi</th>
+          <th>Produk</th>
+          <th>Lini / Shift</th>
+          <th>Inspector</th>
+          <th class="text-end">Diperiksa</th>
+          <th class="text-end">Lolos</th>
+          <th class="text-end">Cacat</th>
+          <th class="text-end">Rate</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inspection in page_obj %}
+          <tr>
+            <td class="text-nowrap">{{ inspection.inspected_at|date:"d-m-Y H:i" }}</td>
+            <td><span class="mono fw-semibold">{{ inspection.batch.kode }}</span></td>
+            <td>
+              <div>{{ inspection.batch.product.nama }}</div>
+              <div class="text-muted-sm mono">{{ inspection.batch.product.part_number }}</div>
+            </td>
+            <td>{{ inspection.batch.line.kode }} / {{ inspection.batch.shift.kode }}</td>
+            <td>{{ inspection.inspector.display_name }}</td>
+            <td class="text-end">{{ inspection.qty_inspected|num }}</td>
+            <td class="text-end">{{ inspection.qty_pass|num }}</td>
+            <td class="text-end">{{ inspection.qty_fail|num }}</td>
+            <td class="text-end {% if inspection.defect_rate > defect_threshold %}text-danger fw-semibold{% endif %}">{{ inspection.defect_rate|pct }}</td>
+            <td><span class="badge badge-{{ inspection.status }}">{{ inspection.get_status_display }}</span></td>
+            <td class="text-end">
+              <a href="{% url 'inspection_detail' inspection.pk %}" class="btn btn-sm btn-outline-secondary">Detail</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="11">
+              <div class="empty-state">
+                <div class="empty-title">Tidak ada pemeriksaan yang cocok</div>
+                <div>Coba ubah kata kunci kode produksi atau rentang tanggal.</div>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

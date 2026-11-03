@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Terjadi Kesalahan &middot; {{ app_name }}{% endblock %}
+{% block page_title %}Terjadi Kesalahan{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body empty-state">
+    <div class="empty-title">500 &mdash; Terjadi kesalahan pada server</div>
+    <div>Silakan coba beberapa saat lagi atau hubungi administrator.</div>
+    <a href="{% url 'home' %}" class="btn btn-primary btn-sm mt-3">Kembali ke halaman awal</a>
+  </div>
+</div>
+{% endblock %}

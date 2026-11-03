@@ -1,0 +1,58 @@
+{% load static %}<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masuk &middot; {{ app_name }}</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="login-page">
+  <div class="login-card">
+    <div class="mb-4">
+      <div class="login-brand">{{ app_name }}</div>
+      <div class="login-sub">{{ app_description }}</div>
+    </div>
+
+    {% if form.errors %}
+      <div class="alert alert-danger py-2">
+        Username atau password salah. Silakan coba lagi.
+      </div>
+    {% endif %}
+
+    {% if next and request.user.is_authenticated %}
+      <div class="alert alert-warning py-2">
+        Akun Anda tidak memiliki akses ke halaman tersebut.
+      </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="mb-3">
+        <label for="id_username" class="form-label">Username</label>
+        <input type="text" name="username" id="id_username" class="form-control" autofocus required
+               value="{{ form.username.value|default:'' }}">
+      </div>
+      <div class="mb-3">
+        <label for="id_password" class="form-label">Password</label>
+        <input type="password" name="password" id="id_password" class="form-control" required>
+      </div>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn btn-primary w-100 py-2">Masuk</button>
+    </form>
+
+    <div class="demo-accounts mt-4">
+      <div class="fw-semibold mb-1">Akun demo</div>
+      <div>Admin &mdash; <span class="mono">admin</span> / <span class="mono">admin123</span></div>
+      <div>Supervisor QC &mdash; <span class="mono">supervisor</span> / <span class="mono">supervisor123</span></div>
+      <div>Petugas QC &mdash; <span class="mono">qc</span> / <span class="mono">qc123</span></div>
+    </div>
+
+    <div class="text-center text-muted-sm mt-3">
+      {% if app_company %}{{ app_company }} &middot; {% endif %}Quality Control
+    </div>
+  </div>
+</div>
+</body>
+</html>

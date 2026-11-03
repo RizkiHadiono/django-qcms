@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load qc_tags %}
+
+{% block title %}{{ config.title }} &middot; {{ app_name }}{% endblock %}
+{% block page_title %}{{ config.title }}{% endblock %}
+
+{% block topbar_actions %}
+  {% if can_edit %}
+    <a href="{% url config.urls.create %}" class="btn btn-accent btn-sm d-inline-flex align-items-center gap-1">
+      {% icon "plus" size=15 %} Tambah {{ config.singular }}
+    </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>{{ config.title }}</h2>
+    <div class="subtitle">{{ config.description }}</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-6">
+      <label class="form-label" for="q">Cari</label>
+      <input type="text" class="form-control" id="q" name="q" value="{{ query }}" placeholder="Kata kunci...">
+    </div>
+    <div class="col-md-4">
+      <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1">
+        {% icon "search" size=15 %} Cari
+      </button>
+      {% if query %}
+        <a href="{% url config.urls.list %}" class="btn btn-outline-secondary ms-1">Reset</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <span>Daftar {{ config.title }}</span>
+    <span class="text-muted-sm fw-normal">{{ total }} data</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          {% for column in config.columns %}<th>{{ column.0 }}</th>{% endfor %}
+          {% if can_edit %}<th class="text-end">Aksi</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            {% for cell in row.cells %}
+              <td>
+                {% if cell.kind == "mono" %}
+                  <span class="mono">{{ cell.value }}</span>
+                {% elif cell.kind == "status" %}
+                  {% if row.active %}
+                    <span class="badge badge-active">Aktif</span>
+                  {% else %}
+                    <span class="badge badge-inactive">Nonaktif</span>
+                  {% endif %}
+                {% elif cell.kind == "severity" %}
+                  <span class="badge {% if cell.value == 'Critical' %}badge-critical{% elif cell.value == 'Major' %}badge-major{% else %}badge-minor{% endif %}">{{ cell.value }}</span>
+                {% else %}
+                  {{ cell.value|default:"-" }}
+                {% endif %}
+              </td>
+            {% endfor %}
+            {% if can_edit %}
+              <td class="text-end">
+                <a href="{% url config.urls.update row.obj.pk %}" class="btn btn-sm btn-outline-secondary">Ubah</a>
+                <form method="post" action="{% url config.urls.toggle row.obj.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-secondary">
+                    {% if row.active %}Nonaktifkan{% else %}Aktifkan{% endif %}
+                  </button>
+                </form>
+              </td>
+            {% endif %}
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="{{ config.columns|length|add:1 }}">
+              <div class="empty-state">
+                <div class="empty-title">Belum ada data</div>
+                <div>Silakan tambahkan {{ config.singular|lower }} terlebih dahulu.</div>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

@@ -1,0 +1,32 @@
+{% load qc_tags %}
+<div class="unit-row {% if form.DELETE.value %}is-deleted{% endif %}" data-unit-row>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="row-number">Unit</span>
+    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" data-remove-unit
+            style="font-size:.72rem">Hapus</button>
+  </div>
+  <div class="row g-2">
+    <div class="col-md-3">
+      <label class="form-label" for="{{ form.unit_ref.id_for_label }}">Kode unit</label>
+      {{ form.unit_ref }}
+      {% for error in form.unit_ref.errors %}<div class="text-danger" style="font-size:.75rem">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="col-md-5">
+      <label class="form-label">Kategori kecacatan <span class="required-star">*</span></label>
+      {{ form.categories }}
+      {% for error in form.categories.errors %}<div class="text-danger" style="font-size:.75rem">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="{{ form.severity.id_for_label }}">Severity</label>
+      {{ form.severity }}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="{{ form.catatan.id_for_label }}">Catatan</label>
+      {{ form.catatan }}
+    </div>
+  </div>
+  {% for error in form.non_field_errors %}
+    <div class="text-danger mt-1" style="font-size:.75rem">{{ error }}</div>
+  {% endfor %}
+  <div class="d-none">{{ form.DELETE }}</div>
+</div>

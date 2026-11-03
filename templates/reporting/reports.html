@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% load qc_tags %}
+
+{% block title %}Laporan QC &middot; {{ app_name }}{% endblock %}
+{% block page_title %}Laporan Kualitas{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'report_export_xlsx' %}?{{ request.GET.urlencode }}"
+     class="btn btn-accent btn-sm d-inline-flex align-items-center gap-1">
+    {% icon "download" size=14 %} Excel
+  </a>
+  <a href="{% url 'report_export_csv' %}?{{ request.GET.urlencode }}"
+     class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
+    {% icon "download" size=14 %} CSV
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Laporan Pemeriksaan QC</h2>
+    <div class="subtitle">
+      Periode {{ dari|date:"d-m-Y" }} s.d. {{ sampai|date:"d-m-Y" }}
+      {% if filter_text %}&middot; Filter: {{ filter_text }}{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="filter-bar no-print">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-md-2">
+      <label class="form-label" for="dari">Dari</label>
+      <input type="date" class="form-control" id="dari" name="dari" value="{{ dari|date:'Y-m-d' }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="sampai">Sampai</label>
+      <input type="date" class="form-control" id="sampai" name="sampai" value="{{ sampai|date:'Y-m-d' }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="line">Lini</label>
+      <select class="form-select" id="line" name="line">
+        <option value="">Semua</option>
+        {% for line in lines %}
+          <option value="{{ line.pk }}" {% if filters.line == line.pk|stringformat:"s" %}selected{% endif %}>{{ line.kode }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="shift">Shift</label>
+      <select class="form-select" id="shift" name="shift">
+        <option value="">Semua</option>
+        {% for shift in shifts %}
+          <option value="{{ shift.pk }}" {% if filters.shift == shift.pk|stringformat:"s" %}selected{% endif %}>Shift {{ shift.kode }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="product">Produk</label>
+      <select class="form-select" id="product" name="product">
+        <option value="">Semua</option>
+        {% for product in products %}
+          <option value="{{ product.pk }}" {% if filters.product == product.pk|stringformat:"s" %}selected{% endif %}>{{ product.part_number }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="metode">Metode</label>
+      <select class="form-select" id="metode" name="metode">
+        <option value="">Semua</option>
+        <option value="full" {% if filters.metode == "full" %}selected{% endif %}>Full</option>
+        <option value="sampling" {% if filters.metode == "sampling" %}selected{% endif %}>Sampling</option>
+      </select>
+    </div>
+    <div class="col-12 d-flex gap-2 flex-wrap">
+      <button type="submit" class="btn btn-primary btn-sm">Terapkan</button>
+      <a href="{% url 'reports' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+      <button type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1" data-print>
+        {% icon "printer" size=14 %} Cetak
+      </button>
+    </div>
+  </form>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-2">
+    <div class="stat-card">
+      <div class="stat-label">Produksi</div>
+      <div class="stat-value">{{ data.total_production|num }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card">
+      <div class="stat-label">Diperiksa</div>
+      <div class="stat-value">{{ data.inspected|num }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card success">
+      <div class="stat-label">Lolos</div>
+      <div class="stat-value">{{ data.passed|num }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card danger">
+      <div class="stat-label">Cacat</div>
+      <div class="stat-value">{{ data.failed|num }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card accent">
+      <div class="stat-label">Defect Rate</div>
+      <div class="stat-value">{{ data.defect_rate|pct }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="stat-card">
+      <div class="stat-label">Sesi</div>
+      <div class="stat-value">{{ data.sessions|num }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="print-only mb-3">
+  <h3 style="font-size:1.1rem;margin-bottom:.25rem">Laporan Quality Control - {{ app_name }}</h3>
+  <div>Periode {{ dari|date:"d-m-Y" }} s.d. {{ sampai|date:"d-m-Y" }}</div>
+  {% if filter_text %}<div>Filter: {{ filter_text }}</div>{% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <span>Rekap per Sesi Pemeriksaan</span>
+    <span class="text-muted-sm fw-normal">{{ total_rows }} baris</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Kode Produksi</th>
+          <th>Tgl Produksi</th>
+          <th>Produk</th>
+          <th>Line</th>
+          <th>Shift</th>
+          <th>Metode</th>
+          <th class="text-end">Diperiksa</th>
+          <th class="text-end">Lolos</th>
+          <th class="text-end">Cacat</th>
+          <th class="text-end">Rate</th>
+          <th>Kategori Kecacatan</th>
+          <th>Inspector</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in page_obj %}
+          <tr>
+            <td class="mono">{{ row.kode_produksi }}</td>
+            <td class="text-nowrap">{{ row.tanggal|date:"d-m-Y" }}</td>
+            <td>
+              <div>{{ row.produk }}</div>
+              <div class="text-muted-sm mono">{{ row.part_number }}</div>
+            </td>
+            <td>{{ row.line }}</td>
+            <td>{{ row.shift }}</td>
+            <td class="text-muted-sm">{{ row.metode }}</td>
+            <td class="text-end">{{ row.diperiksa|num }}</td>
+            <td class="text-end">{{ row.lolos|num }}</td>
+            <td class="text-end">{{ row.cacat|num }}</td>
+            <td class="text-end">{{ row.defect_rate|pct }}</td>
+            <td class="text-muted-sm">{{ row.kategori }}</td>
+            <td>{{ row.inspector }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="12">
+              <div class="empty-state">
+                <div class="empty-title">Tidak ada data pada periode ini</div>
+                <div>Ubah rentang tanggal atau filter untuk melihat data lain.</div>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/pagination.html" %}
+{% endblock %}

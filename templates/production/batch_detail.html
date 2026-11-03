@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load qc_tags %}
+
+{% block title %}{{ batch.kode }} &middot; {{ app_name }}{% endblock %}
+{% block page_title %}Detail Batch Produksi{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'inspection_create_batch' batch.pk %}" class="btn btn-accent btn-sm d-inline-flex align-items-center gap-1">
+    {% icon "plus" size=15 %} Input Pemeriksaan
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'batch_list' %}" class="text-decoration-none text-muted-sm d-inline-flex align-items-center gap-1">
+    {% icon "arrow-left" size=14 %} Kembali ke daftar batch
+  </a>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="mono">{{ batch.kode }}</span>
+        <span class="badge badge-soft">{{ batch.tanggal_produksi|date:"d-m-Y" }}</span>
+      </div>
+      <div class="card-body">
+        <div class="kpi-row">
+          <div class="kpi-item">
+            <div class="kpi-label">Produk</div>
+            <div class="kpi-value">{{ batch.product.nama }}</div>
+            <div class="text-muted-sm mono">{{ batch.product.part_number }}</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">Lini / Shift</div>
+            <div class="kpi-value">{{ batch.line.kode }} &middot; Shift {{ batch.shift.kode }}</div>
+            <div class="text-muted-sm">{{ batch.shift.rentang_jam }}</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">Jumlah Produksi</div>
+            <div class="kpi-value">{{ batch.qty_plan|num }} unit</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">Dibuat Oleh</div>
+            <div class="kpi-value">{{ batch.created_by.display_name|default:"-" }}</div>
+            <div class="text-muted-sm">{{ batch.created_at|date:"d-m-Y H:i" }}</div>
+          </div>
+        </div>
+        {% if batch.catatan %}
+          <hr>
+          <div class="text-muted-sm mb-1">Catatan</div>
+          <div>{{ batch.catatan }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Ringkasan QC</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted-sm">Diperiksa</span>
+          <strong>{{ batch.total_diperiksa|num }} unit</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted-sm">Cacat</span>
+          <strong class="text-danger">{{ batch.total_cacat|num }} unit</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted-sm">Defect rate</span>
+          <strong>{{ batch.defect_rate|pct }}</strong>
+        </div>
+        <div class="progress mt-3">
+          <div class="progress-bar bg-danger" role="progressbar"
+               style="width: {{ batch.defect_rate|floatformat:2 }}%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header d-flex justify-content-between">
+    <span>Riwayat Pemeriksaan</span>
+    <span class="text-muted-sm fw-normal">{{ inspections|length }} sesi</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Waktu</th>
+          <th>Inspector</th>
+          <th>Metode</th>
+          <th class="text-end">Diperiksa</th>
+          <th class="text-end">Lolos</th>
+          <th class="text-end">Cacat</th>
+          <th class="text-end">Defect Rate</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inspection in inspections %}
+          <tr>
+            <td>{{ inspection.inspected_at|date:"d-m-Y H:i" }}</td>
+            <td>{{ inspection.inspector.display_name }}</td>
+            <td>{{ inspection.get_metode_display }}</td>
+            <td class="text-end">{{ inspection.qty_inspected|num }}</td>
+            <td class="text-end">{{ inspection.qty_pass|num }}</td>
+            <td class="text-end">{{ inspection.qty_fail|num }}</td>
+            <td class="text-end">{{ inspection.defect_rate|pct }}</td>
+            <td><span class="badge badge-{{ inspection.status }}">{{ inspection.get_status_display }}</span></td>
+            <td class="text-end">
+              <a href="{% url 'inspection_detail' inspection.pk %}" class="btn btn-sm btn-outline-secondary">Detail</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="9">
+              <div class="empty-state">
+                <div class="empty-title">Belum ada pemeriksaan</div>
+                <div>Batch ini belum memiliki catatan pemeriksaan QC.</div>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
