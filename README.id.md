@@ -267,8 +267,10 @@ CI menjalankan lint, migrasi, tes, dan build Docker pada setiap push.
 4. Untuk HTTPS, pasang Nginx/Caddy di depan port 8080, set `HTTPS_ENABLED=True`
    dan `CSRF_TRUSTED_ORIGINS`.
 
-Blueprint `render.yaml` disertakan untuk demo publik gratis (SQLite + data seed,
-sehingga tidak ada yang kedaluwarsa).
+Blueprint `render.yaml` disertakan bila ingin mencoba deploy publik gratis
+(SQLite + data seed, sehingga tidak ada yang kedaluwarsa). Proyek ini tidak
+membutuhkannya — menjalankan secara lokal atau di server pabrik tetap didukung
+sepenuhnya.
 
 ## Catatan bahasa
 

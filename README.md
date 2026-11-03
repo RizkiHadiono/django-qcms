@@ -272,8 +272,9 @@ CI runs lint, migrations, tests, and a Docker build on every push.
 4. For HTTPS, put Nginx/Caddy in front of port 8080, set `HTTPS_ENABLED=True`
    and `CSRF_TRUSTED_ORIGINS`.
 
-A `render.yaml` blueprint is included for a free public demo (SQLite + seeded
-data, so nothing expires).
+A `render.yaml` blueprint is included if you want to try a free public
+deployment (SQLite + seeded data, so nothing expires). The project does not
+require it — running locally or on a factory server is fully supported.
 
 ## A note on language
 
