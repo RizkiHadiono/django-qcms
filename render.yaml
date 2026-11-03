@@ -4,7 +4,7 @@
 # bergantung pada database gratis yang kedaluwarsa setelah ~30 hari.
 services:
   - type: web
-    name: qcms
+    name: django-qcms
     runtime: docker
     plan: free
     region: singapore
